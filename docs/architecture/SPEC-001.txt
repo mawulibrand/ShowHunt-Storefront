@@ -1,0 +1,260 @@
+SPEC-001
+ShowHunt E-Commerce Platform
+Version 1 Architecture & Delivery Specification
+
+Ghana-first, mobile-first retail commerce platform. V1 is operated by ShowHunt as the retailer; multi-vendor marketplace capabilities are deliberately deferred.
+Status: Architecture and V1 scope frozen for implementation. Delivery model: one full-time developer, approximately 35-40 productive hours/week.
+ 
+Background
+ShowHunt is a Ghana-first digital commerce platform designed to make mobile shopping simple and trusted. The long-term direction is a multi-vendor marketplace, but V1 deliberately starts as a single-retailer system in which ShowHunt controls the catalog, pricing, inventory, customer orders, payments and fulfillment.
+The launch market is Greater Accra, with configurable delivery zones. Customers use a responsive mobile-first storefront; staff and dispatchers use a separate responsive admin application. Native applications, marketplace sellers, courier integrations and large-scale distributed infrastructure are deferred until production evidence justifies them.
+The architecture is optimized for a sole developer: a TypeScript modular monolith, managed infrastructure, explicit domain boundaries, vertical-slice delivery and minimal operational ceremony.
+Requirements
+The requirements below use MoSCoW prioritization. 'Must' items define the safe V1 commerce boundary; 'Should' items materially improve launch operations but can be simplified if necessary; 'Could' and 'Won't' prevent scope drift.
+Must Have
+•	Customer browsing, hierarchical categories (maximum three levels initially), products, variants, SKU-level pricing, images and availability.
+•	Guest browsing/cart and guest checkout, with a verified Ghana phone number required before order creation.
+•	Phone + OTP customer authentication; lightweight customer profile and saved delivery addresses; no customer password in V1.
+•	Separate purchaser and delivery recipient data, with the purchaser retaining ownership of the order.
+•	PostgreSQL-backed search across product name, keywords, brand, category, SKU and attributes, with filters, sorting, typo tolerance and autocomplete.
+•	Server-authoritative cart, checkout, pricing, coupon, delivery fee and inventory validation.
+•	SKU inventory with on-hand, reserved and available balances; immutable stock ledger; quarantine; no negative inventory; concurrency-safe reservations.
+•	Automated Mobile Money payments through Paystack for MTN MoMo, Telecel Cash and AT Money, including signed/authenticated webhooks, server verification, idempotency and reconciliation.
+•	Controlled Pay-on-Delivery by product and delivery zone, supporting cash and Mobile Money at delivery.
+•	Configurable Greater Accra delivery zones with fixed fees and POD eligibility.
+•	Order lifecycle from confirmation through processing, dispatch and delivery, with immutable commercial snapshots and status history.
+•	Cancellations, returns, quarantine/inspection, partial/full refunds and linked replacement orders.
+•	Verified-purchase reviews with manual moderation.
+•	Transactional SMS through Arkesel and optional transactional email through Resend, processed asynchronously.
+•	Separate staff authentication using email/password, Argon2id, TOTP MFA, recovery codes, RBAC and immutable audit logging.
+•	Operational and financial reporting, including prepaid/POD distinction and cash custody reconciliation.
+•	Mobile-first responsive storefront/admin, WCAG 2.2 AA where applicable, and support for constrained networks/lower-powered Android devices.
+•	CI/CD, staging, production, backups, restore testing, monitoring, security hardening, regression testing and controlled soft launch.
+Should Have
+•	Low-stock thresholds and operational dashboard alerts.
+•	CSV/XLSX reporting exports generated asynchronously.
+•	Search analytics, product views, add-to-cart activity and product/category sales analytics.
+•	Private evidence uploads for returns/delivery and public product/review image storage.
+•	Customer order tracking through authenticated account or order reference plus purchaser phone OTP.
+Could Have - Post V1
+•	Native mobile applications using the same versioned APIs.
+•	Bulk catalog import when product volume justifies it.
+•	Courier integration, automated dispatcher assignment, routing and live GPS.
+•	External product/web analytics where useful.
+•	Dedicated search engine, cache or queue if measured production load requires them.
+Won't Have in V1
+•	Multi-vendor marketplace, seller portal or seller settlement.
+•	Microservices, Kubernetes, Kafka/RabbitMQ, Redis, multi-region deployment or GraphQL.
+•	AI recommendations, personalized/sponsored search, AI review moderation or forecasting.
+•	Gift cards, store credit, BNPL, loyalty, referrals or marketing automation.
+•	Direct exchange transaction; exchanges use return + replacement.
+•	Supplier/procurement and purchase-order management.
+Non-Functional Requirements
+Area	V1 requirement
+Performance	Ordinary internal backend p95 <= 500 ms, excluding provider/file latency; benchmark search and critical journeys.
+Availability	99.9% monthly target with documented treatment of appropriate maintenance/external outages.
+Security	Practical OWASP ASVS L2; TLS; encryption at rest; MFA/RBAC; secure cookies; webhook verification; upload controls; sanitized logs.
+Recovery	RPO <= 15 minutes and RTO <= 4 hours; encrypted monitored backups/PITR where supported; restore testing and runbooks.
+Observability	Structured logs, request IDs, errors, metrics, provider/business health, actionable alerts and health endpoints.
+Maintainability	Modular monolith, versioned REST APIs, migrations, automated tests, reproducible builds and compatible deployments.
+Testing	Unit, integration with real test PostgreSQL, E2E, security, performance, payment sandbox, migration and UAT gates.
+Privacy	Data minimization, controlled account closure/anonymization, transactional retention and pre-production Ghana legal/privacy review.
+
+Method
+Architecture
+V1 uses a TypeScript-first modular monolith. The storefront and admin are separate Next.js applications. A NestJS codebase is deployed as an API process and a worker process. PostgreSQL is the structured system of record. Cloudflare R2 stores objects. External provider adapters isolate Paystack, Arkesel and Resend.
+[Customer] -> [Next.js Storefront] --\
+                                  [NestJS API] <-> [Managed PostgreSQL]
+[Staff] ----> [Next.js Admin] -----/     |
+                                         +-> [Worker]
+                                         |     +-> Paystack
+                                         |     +-> Arkesel
+                                         |     +-> Resend
+                                         |
+                                         +-> Cloudflare R2
+Hosting target: DigitalOcean App Platform for storefront, admin, API and worker; DigitalOcean Managed PostgreSQL; Cloudflare R2 for object storage. Containers keep the deployment portable. Ghana latency is tested before production.
+Repository & Components
+showhunt/
+  apps/
+    storefront/       Next.js customer application
+    admin/            Next.js staff/dispatcher application
+    api/              NestJS API + worker entry points
+  packages/
+    shared-types/
+    validation/
+    ui/
+    tooling/
+  docs/
+    architecture/
+    runbooks/
+  infrastructure/
+pnpm workspaces + Turborepo coordinate the monorepo. Exact package versions are pinned at repository initialization after current official documentation/security review. REST/OpenAPI is exposed under /api/v1. Controllers remain thin; domain services own business rules and transaction boundaries.
+Core Domain Modules
+Module	Responsibilities
+Auth	Customer OTP/session; staff password/TOTP; recovery; authorization.
+Customers	Profile, addresses, recipient-related customer data.
+Catalog	Categories, products, variants, SKUs, images, sale pricing.
+Search	PostgreSQL FTS + pg_trgm, filters, autocomplete, search events.
+Cart/Checkout	Guest/registered carts, merge, authoritative totals, checkout sessions.
+Promotions	Scheduled SKU sales and manually managed coupons.
+Inventory	Balances, reservations, ledger, quarantine and concurrency control.
+Orders	Immutable order snapshots, state transitions and history.
+Payments	Payment attempts, Paystack adapter, webhooks, verification, reconciliation, refunds.
+Fulfillment	Processing, dispatcher assignment, delivery, POD and cash custody.
+Returns	Eligibility, approvals, quarantine, inspection and replacement linkage.
+Reviews	Verified purchase reviews and moderation.
+Notifications	Transactional outbox, jobs, SMS/email history/retry.
+Reporting	Operational/financial metrics, exports and daily aggregates.
+
+Database Design
+PostgreSQL is the authoritative structured store. UUIDs are used internally; timestamps are TIMESTAMPTZ/UTC. Monetary values are integer minor units (for example GHS 125.50 = 12550). Transactional records use restrictive deletion; commercial history is retained rather than physically deleted.
+Domain	Principal tables / rules
+Customer	customers; customer_addresses; delivery_zones; normalized unique +233 phone; one default address.
+Catalog	categories; products; product_attributes; variant options/values; product_skus; product_images; unique SKU codes and variant combinations.
+Inventory	inventory; inventory_reservations; inventory_ledger; inventory_quarantine; reserved <= on_hand; deterministic row locking.
+Cart	carts; cart_items; checkout_sessions; cart does not reserve stock.
+Promotions	coupons; coupon_products; coupon_categories; coupon_redemptions; one coupon/order; percentage in basis points.
+Orders	orders; order_items; order_status_history; commercial recipient/address/zone/price/coupon/return-window snapshots.
+Payments	payments; payment_provider_events; refunds; multiple attempts/order; refund total <= collected amount.
+Delivery	deliveries; cash_collections; cash_handover_batches/items; dispatcher assignment and POD evidence.
+Returns	returns; return_items; return images; received goods enter quarantine before restock/damage disposition.
+Reviews	reviews; review_images; unique order_item review; aggregates use PUBLISHED only.
+Staff	staff_users; roles; permissions; role_permissions; staff_roles; recovery codes; audit_logs.
+Async	outbox_events; background_jobs; notifications; at-least-once jobs with idempotent business effects.
+Idempotency	idempotency_keys plus unique provider event fingerprints for critical writes.
+
+Critical Inventory Algorithm
+BEGIN
+  lock affected inventory rows FOR UPDATE in deterministic sku_id order
+  for each SKU:
+      assert requested_qty <= on_hand - reserved
+  create ACTIVE inventory reservations
+  increment reserved quantities
+  create required immutable ledger/outbox records
+COMMIT
+
+Payment success -> commit reservation exactly once.
+Failure/eligible expiry -> release exactly once.
+POD -> hold reservation through fulfillment until final disposition.
+The last-unit race is an integration test requirement: when stock = 1 and two transactions reserve concurrently, exactly one succeeds.
+Checkout & Order Creation
+Cart
+ -> verified purchaser phone
+ -> recipient + supported delivery zone/address
+ -> coupon/payment selection
+ -> server revalidates SKU, price, sale, coupon, stock, zone, fee, POD
+ -> if material terms changed: CHECKOUT_REVALIDATION_REQUIRED
+ -> transaction:
+      reserve inventory
+      create order + order_items snapshots
+      create status history
+      create outbox event
+ -> prepaid: PENDING_PAYMENT
+ -> eligible POD: CONFIRMED
+Confirmed commercial orders are immutable. Corrections use explicit cancellation, return, refund, replacement or new-order workflows.
+Payments
+Commerce modules depend on a PaymentProvider abstraction. PaystackAdapter maps ShowHunt payment/network concepts to the provider API. V1 supports prepaid Mobile Money and POD collection; cards may be added later through the same hosted/tokenized architecture.
+PENDING_PAYMENT
+ -> create payment attempt
+ -> initiate Paystack Mobile Money
+ -> customer authorizes
+ -> webhook received
+ -> validate webhook authenticity/signature
+ -> verify transaction with provider
+ -> match reference + amount + currency + expected state
+ -> atomic DB transaction:
+      payment = SUCCEEDED
+      order = CONFIRMED
+      inventory reservation = COMMITTED
+      status/outbox records
+Browser redirects are never payment authority. Duplicate webhooks are idempotent. A PostgreSQL-backed reconciliation worker verifies unresolved attempts. Failed/expired attempts can create a new payment attempt against the same still-payable order. Reservation expiry locks payment/order state before release to avoid paid-but-oversold races.
+POD & Fulfillment
+POD is available only when every SKU and the selected zone permit it. Dispatchers cannot alter totals. Customer rejection uses structured reasons and sends goods to RETURN_PENDING/quarantine. Cash custody moves COLLECTED_BY_DISPATCHER -> HANDED_OVER -> RECONCILED or DISCREPANCY, with separation between collector and reconciler.
+CONFIRMED -> PROCESSING -> READY_FOR_DISPATCH -> SHIPPED -> DELIVERED
+                                      |
+                                      +-> rejection/delivery failure -> RETURN_PENDING
+Returns & Refunds
+DELIVERED -> RETURN_REQUESTED
+ -> approve/reject
+ -> AWAITING_RETURN
+ -> received -> RETURN_PENDING/quarantine
+ -> inspect -> RESTOCK or DAMAGED
+ -> refund and/or linked replacement order
+Refunds are separate financial records. Partial refunds are allowed but cumulative successful refunds cannot exceed collected payment. Refund approval uses maker-checker controls. Manual fallback requires reference, explanation and audit evidence. Exchanges are modeled as return + replacement.
+Search, Jobs, Files & Caching
+Search uses PostgreSQL full-text search plus pg_trgm and normal indexes behind ProductSearchService. A dedicated engine is introduced only after measured need. Background work uses a durable PostgreSQL jobs table and transactional outbox; no Redis/Kafka is required in V1. Product/review public images and private return/delivery evidence use R2 with generated object keys, validation and derivative sizes. Public catalog caching uses Next.js/CDN/browser caching; inventory, cart, checkout, coupons, orders and payments remain authoritative and uncached for correctness.
+Authentication, RBAC & Security
+Customers authenticate with ShowHunt-owned 6-digit Ghana phone OTPs: short-lived, single-use, digest-only storage, limited attempts, cooldown/rate limits, purpose scope and resend invalidation. Sessions use Secure HttpOnly cookies. Staff use email/password (Argon2id) plus TOTP MFA and single-use hashed recovery codes. Only SUPER_ADMIN manages staff/roles in V1, while the underlying permission model remains extensible.
+Sensitive operations create immutable audit records containing actor, action, resource, before/after state where appropriate, reason, timestamp and request ID. At least one active SUPER_ADMIN must always remain.
+Reliability & Operations
+API endpoints expose /health/live and /health/ready. JSON logs carry X-Request-ID across API, audit and jobs. Managed error monitoring complements DigitalOcean logs/metrics. Alerts focus on checkout/payment failures, unresolved payments, stale jobs/reservations, worker health, inventory discrepancies and provider outages.
+Recovery targets are RPO <= 15 minutes and RTO <= 4 hours. Restore testing is mandatory before launch and quarterly afterward. Payment reconciliation is part of recovery; ShowHunt never recharges a customer merely because an internal record is missing.
+Similar Commerce Patterns Considered
+The design follows common mature-commerce principles rather than attempting to copy proprietary implementations: separate catalog SKUs from inventory, separate orders from payment attempts, preserve order snapshots, make payment callbacks idempotent, keep returns/refunds auditable, and isolate external providers. V1 deliberately omits marketplace and hyperscale infrastructure patterns that would add operational cost without current business evidence.
+Implementation
+Delivery is vertical-slice based. Each slice includes its migration/data model, backend rules, relevant storefront/admin UI, authorization, important tests, error handling, observability and staging deployment. Two-week blocks may be used for planning, but they are not rigid Scrum commitments.
+ID	Slice	Deliverable
+I-02	Repository & Foundation	pnpm/Turborepo monorepo; local PostgreSQL; env validation; CI; health endpoints; OpenAPI; request IDs; logging; migrations.
+I-03	Customer Identity	Ghana phone OTP, sessions, profile, addresses and delivery-zone foundation.
+I-04	Staff/Admin Foundation	SUPER_ADMIN CLI bootstrap; password + TOTP; recovery; RBAC; audit; admin shell.
+I-05	Catalog	Categories, products, variants/SKUs, prices/sales, R2 product images, admin catalog and storefront browsing.
+I-06	Inventory	Receiving, adjustments, ledger, thresholds, quarantine, reservation primitives and concurrency tests.
+I-07	Search/Cart/Promotions	Postgres search/autocomplete/filtering; guest/customer carts; merge; manual coupons and server totals.
+I-08	Checkout/Orders	Checkout sessions, recipient/delivery, revalidation, atomic reservation/order creation and immutable snapshots.
+I-09	Paystack MoMo	Payment attempts, adapter, webhooks, verification, reconciliation, retry and expiry safety.
+I-10	Fulfillment/POD	Order workspace, manual dispatcher assignment, delivery, POD cash/MoMo, rejection and cash custody.
+I-11	Returns/Refunds	Cancellation, returns, inspection, partial/full refunds, maker-checker and replacement orders.
+I-12	Reviews/Notifications	Verified reviews/manual moderation; outbox/jobs; Arkesel SMS and Resend email.
+I-13	Reporting	Operational/financial/inventory dashboard, daily metrics and private async exports.
+I-14	Hardening	Regression, security, load, provider-failure, restore/recovery tests and release candidate.
+I-15	UAT	Real-device/business journey testing; launch catalog/configuration/policies; blocker resolution.
+I-16	Production/Soft Launch	Provision production, providers/DNS/TLS, controlled real transactions, gradual public opening.
+I-17	Stabilization	2-4 week initial stabilization, incidents, KPI baseline, costs/performance and V1.1 backlog.
+
+Testing & Release Gates
+Every development milestone is complete only after safe migrations, server authorization, automated tests, important failure-path tests, adequate logging, green CI, staging deployment and a manual smoke test.
+•	Unit tests: pricing, coupons, eligibility, transitions, normalization and other deterministic business rules.
+•	Integration tests: real test PostgreSQL, transactions, concurrency, invariants, idempotency, outbox and RBAC.
+•	Payment tests: success, failure, expiry, delayed/duplicate/missing webhooks, wrong amount/reference, retry and reconciliation.
+•	E2E tests: guest/registered prepaid, POD, admin catalog/inventory, fulfillment, cash, refund/return/review and staff MFA/RBAC.
+•	Release gates: build/types/unit/integration/E2E/migrations/security/staging/UAT. Critical/high exploitable security findings block release.
+•	Every production defect affecting payments, inventory, order integrity, auth/authz or refunds gains a regression test where practical.
+Deployment & Change Management
+Environments are local -> persistent staging -> production. Merge to main deploys automatically to staging; production requires explicit manual approval of a traceable release SHA. Database changes use expand/deploy/backfill/verify/contract where needed. Application rollback uses a known-good artifact; commercial-state incidents use runbooks and reconciliation rather than blind database restoration.
+Milestones
+Milestone	Scope	Estimate	Exit gate
+M1	Foundation	1-2 weeks	Fresh clone -> install -> DB/migrations -> all apps/worker -> CI -> staging.
+M2	Customer Identity	2-3	OTP/session/profile/address journey and security tests pass.
+M3	Staff/Admin	2-3	Bootstrap, TOTP, RBAC, audit and authorization tests pass.
+M4	Catalog	3-4	Admin creates/publishes variants/SKUs/images; storefront displays them.
+M5	Inventory	2-3	Receiving/ledger/availability work; last-unit concurrency test passes.
+M6	Search/Cart/Promotions	3-4	Search/cart/merge/coupons/server pricing pass.
+M7	Checkout/Orders	3-4	Atomic reservation/order creation and immutable snapshots pass.
+M8	Payments	2-4	Paystack edge cases, reconciliation and exactly-once business effects pass.
+M9	Fulfillment/POD	3-4	Dispatch, delivery, POD, rejection and cash custody pass.
+M10	Returns/Refunds	3-4	Cancellation/return/quarantine/refund/replacement and maker-checker pass.
+M11	Reviews/Notifications	2-3	Verified reviews plus reliable SMS/email job flow pass.
+M12	Reporting	2-3	Reports reconcile with source transactions; exports/RBAC pass.
+M13	Hardening	3-4	Regression/security/performance/recovery gates pass; no blockers.
+M14	UAT	2-3	Business UAT accepted; production configuration and RC approved.
+M15	Production	1-2	Controlled real MoMo/POD paths verified; public access enabled.
+M16	Stabilization	2-4	No critical defects; commerce stable; baselines/costs understood.
+
+Full-time planning assumption: approximately 35-40 productive hours/week. Mechanical effort range is approximately 36-54 weeks through stabilization. Working planning baseline is approximately 10-12 months; aggressive scenario approximately 8-9 months; contingency approximately 12-14+ months. These are planning ranges, not launch promises.
+Schedule pressure is handled by simplifying or deferring non-launch-critical functionality to V1.1. Payment correctness, inventory integrity, authorization, backups, auditability and essential testing are not schedule-tradeoff candidates.
+Gathering Results
+V1 is evaluated across four dimensions: business outcomes, customer journey, operational correctness and technical health. The first 1-3 production months establish evidence-based baselines before ShowHunt sets more specific performance targets.
+Dimension	Measures
+Business	Completed orders, GMV, conversion, AOV, repeat customers, MoMo success, POD acceptance/rejection, cancellation and return rates.
+Customer Journey	Product view -> cart -> checkout -> OTP -> order/payment -> confirmation -> delivery; identify abandonment/failure stage.
+Operational Correctness	Inventory discrepancies, overselling, stuck reservations, unresolved payments, reconciliation differences, POD cash discrepancies, failed deliveries, refunds/returns and notification failures.
+Technical Health	Availability, API p50/p95/p99, 5xx, DB latency/connections/slow queries, CPU/memory, job delay/failure, provider latency, deployments, backups/restores.
+
+Zero-tolerance examples include negative inventory, unauthorized admin operations, duplicate successful charges, refunds exceeding collected payment and cross-customer data exposure. Any occurrence is treated as an incident and receives investigation plus a regression test where practical.
+Architecture changes require production evidence. PostgreSQL search/jobs, the modular monolith and current infrastructure remain until measurements show a specific performance, reliability, security, capability or cost problem that a change solves.
+Review cadence: daily during soft launch; weekly operational review after stabilization; monthly KPI/cost/reliability review; quarterly recovery and architecture review.
+V1 Architecture Freeze
+The V1 technology footprint is frozen around TypeScript, Node.js 24 LTS, Next.js 16, NestJS 12, PostgreSQL, DigitalOcean App Platform/Managed PostgreSQL, Cloudflare R2, Paystack, Arkesel and Resend. Exact package/provider details are verified against current official documentation when implementation begins.
+Core architecture changes require concrete implementation, security, reliability, provider, cost or business evidence. The next activity is implementation, not further speculative architecture expansion.
+Need Professional Help in Developing Your Architecture?
+Please contact me at sammuti.com :)

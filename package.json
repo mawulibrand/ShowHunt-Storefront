@@ -1,0 +1,21 @@
+{
+    "name":  "showhunt",
+    "version":  "0.1.0",
+    "private":  true,
+    "packageManager":  "pnpm@10.17.1",
+    "engines":  {
+                    "node":  "\u003e=24 \u003c25"
+                },
+    "scripts":  {
+                    "dev":  "turbo run dev",
+                    "build":  "turbo run build",
+                    "typecheck":  "turbo run typecheck",
+                    "test":  "turbo run test",
+                    "db:migrate":  "pnpm --filter @showhunt/api db:migrate"
+                },
+    "devDependencies":  {
+                            "turbo":  "2.11.4",
+                            "typescript":  "5.9.2",
+                            "@types/node":  "24.5.2"
+                        }
+}
