@@ -1,0 +1,37 @@
+.hunt-sales {
+  background: var(--teal-accessible);
+  color: var(--white);
+  font-size: 14px;
+}
+.hunt-sales-inner {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-block: 10px;
+}
+.hunt-sales-title {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: .3px;
+}
+.hunt-sales-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--navy);
+  padding: 6px 12px;
+  border-radius: 5px;
+}
+.hunt-sales-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

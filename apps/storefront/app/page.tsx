@@ -1,5 +1,8 @@
+import { HuntSalesBar } from './HuntSalesBar';
+
 export default function Home() {
   return <>
+    <HuntSalesBar endsAt={process.env.HUNT_SALES_END_AT} />
     <header className="site-header"><div className="container header-inner"><a className="brand" href="/" aria-label="ShowHunt home">Show<span>Hunt</span></a><nav aria-label="Main navigation"><a href="#discover">Discover</a><a href="#how-it-works">How it works</a></nav></div></header>
     <main id="main">
       <section className="hero"><div className="container hero-grid"><div><p className="eyebrow">Fresh finds. Everyday possibilities.</p><h1>Your next favourite<br/>starts here.</h1><p className="intro">A simpler way to discover and shop. Thoughtful choices, clear information, and a little more joy in your everyday.</p><a className="button" href="#discover">Meet ShowHunt <span aria-hidden="true">&nbsp; →</span></a></div><aside className="hero-note"><p className="eyebrow">Ghana first. You always.</p><h2>Good things are<br/>on their way.</h2><p>We’re getting ready to bring ShowHunt to Greater Accra. Our store isn’t taking orders yet. Explore what we’re building below.</p></aside></div></section>
