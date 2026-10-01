@@ -22,5 +22,5 @@ if (env.mode !== 'production') {
   const document = SwaggerModule.createDocument(app, new DocumentBuilder().setTitle('ShowHunt API').setVersion('1').build());
   SwaggerModule.setup('api/v1/docs', app, document);
 }
-app.enableShutdownHooks();
+if (process.env.VERCEL !== '1') app.enableShutdownHooks();
 await app.listen(env.port, '0.0.0.0');

@@ -2,8 +2,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
-import { parseEnvironment } from '@showhunt/validation';
-const client = new pg.Client({ connectionString: parseEnvironment(process.env).databaseUrl });
+import { parseMigrationEnvironment } from '@showhunt/validation';
+const client = new pg.Client({ connectionString: parseMigrationEnvironment(process.env).databaseUrl, connectionTimeoutMillis: 10000 });
 await client.connect();
 try {
   await client.query('SELECT pg_advisory_lock(8201001)');

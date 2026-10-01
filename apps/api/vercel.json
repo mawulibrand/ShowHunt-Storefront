@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nestjs",
+  "buildCommand": "pnpm --filter @showhunt/api build",
+  "regions": ["fra1"]
+}

@@ -1,0 +1,26 @@
+# Fill the secret in a private copy or in the DO control panel before deployment.
+# This template creates a paid worker when submitted. It has not been deployed.
+name: showhunt-staging-worker
+region: fra
+workers:
+  - name: worker
+    github:
+      repo: mawulibrand/ShowHunt-Storefront
+      branch: main
+      deploy_on_push: false
+    source_dir: /
+    dockerfile_path: infrastructure/worker.Dockerfile
+    run_command: node apps/api/dist/worker.js
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_TIME
+      - key: DB_POOL_MAX
+        value: '2'
+        scope: RUN_TIME
+      - key: DATABASE_URL
+        value: REPLACE_WITH_STAGING_NEON_POOLED_URL_USING_SSLMODE_VERIFY_FULL
+        scope: RUN_TIME
+        type: SECRET

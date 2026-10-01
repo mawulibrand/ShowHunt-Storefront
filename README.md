@@ -2,6 +2,8 @@
 
 Ghana-first, mobile-first commerce. This repository starts SPEC-001's foundation milestone with a branded pre-launch storefront, an inert staff shell, a NestJS API/worker and PostgreSQL migrations.
 
+Hosting plan: **Vercel** storefront/admin/API, **Neon** PostgreSQL, **Cloudflare R2** files, and **DigitalOcean** worker. See [ADR-002](docs/architecture/ADR-002-hosting.md) and the [staging runbook](docs/runbooks/staging.md). Provider configuration is prepared; hosted deployment is not yet verified.
+
 ## Prerequisites
 
 Node.js 24, pnpm 10.17.1 and Docker with Compose (or PostgreSQL 17). On Windows use `pnpm.cmd` where PowerShell blocks scripts. If pnpm is unavailable, `npx.cmd --yes pnpm@10.17.1 <command>` can run it without a global installation.
