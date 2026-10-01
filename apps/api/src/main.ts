@@ -23,4 +23,10 @@ if (env.mode !== 'production') {
   SwaggerModule.setup('api/v1/docs', app, document);
 }
 if (process.env.VERCEL !== '1') app.enableShutdownHooks();
-await app.listen(env.port, '0.0.0.0');
+await app.init();
+// Vercel captures listen() during module import and binds the server afterward.
+// Await initialization, but let the import finish without the listen callback.
+void app.listen(env.port, '0.0.0.0').catch(() => {
+  console.error(JSON.stringify({ level: 'error', event: 'api_listen_failed' }));
+  process.exitCode = 1;
+});

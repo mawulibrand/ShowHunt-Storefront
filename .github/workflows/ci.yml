@@ -28,6 +28,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Vercel-style API startup regression
+        run: node apps/api/scripts/smoke-vercel.mjs
       - name: API smoke test
         run: |
           pnpm --filter @showhunt/api start > /tmp/showhunt-api.log 2>&1 &

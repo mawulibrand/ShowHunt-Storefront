@@ -12,7 +12,7 @@
 
 ## Pending
 
-- Container build, GitHub CI execution, staging deployment and manual browser/device review have not run.
+- Container build, successful hosted staging verification and manual browser/device review remain pending.
 
 ## Hosting-plan validation (2026-10-01)
 
@@ -25,6 +25,15 @@
 - The original API .env remains ignored by Git. No provider credentials or paid resources were created.
 - Vercel-native build/deployment, Neon TLS/connectivity, R2 bucket configuration, DigitalOcean worker container validation and hosted smoke tests remain pending. Local builds do not prove these provider-specific checks.
 
+## Vercel startup investigation (2026-10-01)
+
+- The project owner reported successful Neon migrations and green CI for the pushed hosting configuration.
+- The first hosted API deployment returned INTERNAL_FUNCTION_INVOCATION_FAILED for /health/live. Its request details reported no outgoing requests and a response after about 60 seconds; hosted acceptance has not passed.
+- A local reproduction of Vercel's public Node adapter captured Server.listen() without calling its callback. The original compiled API then timed out waiting for its module import to finish: top-level await app.listen() cannot complete while the adapter waits for that import before binding the captured server.
+- Startup now awaits app.init() and starts app.listen() without awaiting its callback during module import. Listen errors set a nonzero exit code and emit a fixed diagnostic event.
+- The new smoke-vercel.mjs script checks module import completion, HTTP liveness, request IDs, no-store, readiness 503 without a database, and production OpenAPI 404. It uses dummy credentials and is wired into CI after the build.
+- The corrected API TypeScript build, Vercel-style startup regression and ordinary API smoke test all passed locally. A successful hosted redeployment is still required; the regression simulates the public adapter, not Vercel's private production runtime or build packaging.
+
 ## Reproduce completed checks
 
 ```sh
@@ -32,5 +41,7 @@ node --test packages/ui/test/contrast.test.mjs packages/validation/test/environm
 node --check apps/api/scripts/migrate.mjs
 node --check apps/api/scripts/smoke.mjs
 ```
+
+After building the API, run `node apps/api/scripts/smoke-vercel.mjs` for the Vercel-style startup regression and `node apps/api/scripts/smoke.mjs` for ordinary server startup.
 
 The API integration test intentionally skips when `API_TEST_URL` is absent; a skipped test is not counted as a passed runtime check.
