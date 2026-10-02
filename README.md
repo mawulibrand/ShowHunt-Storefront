@@ -45,6 +45,6 @@ After building, run `node apps/api/scripts/smoke.mjs` to launch an isolated API 
 
 ## Delivery status
 
-I-02 infrastructure is provisioned and its manual staging checks are recorded. No customer authentication, real catalog, payment, inventory or staff controls exist yet. The public page accurately states that orders are unavailable. Coordinated deployment after successful CI, release-SHA verification and the remaining recovery/failure-path checks are still pending. See [foundation decisions](docs/architecture/foundation.md) and [development runbook](docs/runbooks/development.md).
+I-02 infrastructure is provisioned and its manual staging checks are recorded. No customer authentication, real catalog, payment, inventory or staff controls exist yet. The public page accurately states that orders are unavailable. CI-gated staging deployment is prepared as an opt-in workflow; [configuration and a successful first release](docs/runbooks/staging-release.md), release-SHA verification and remaining recovery/failure-path checks are still pending. See [foundation decisions](docs/architecture/foundation.md) and [development runbook](docs/runbooks/development.md).
 
 Dependencies are installed with pnpm 10.17.1 and `pnpm-lock.yaml` is included. Builds, TypeScript checks and the isolated API smoke test pass locally. Check [verification status](docs/verification.md) for remaining infrastructure checks.

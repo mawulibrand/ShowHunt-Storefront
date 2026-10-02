@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "pnpm --filter @showhunt/storefront build"
+  "buildCommand": "pnpm --filter @showhunt/storefront build",
+  "git": { "deploymentEnabled": false }
 }

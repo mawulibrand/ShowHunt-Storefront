@@ -87,4 +87,4 @@ Verify on the deployed SHA:
 
 Record cold and warm timings, including API-to-database latency. Do not claim the 500 ms backend p95 target has passed without a representative benchmark. Verify database restore capability and its plan limits before launch.
 
-Next, configure the staging deployment workflow to run only after Foundation checks succeeds on main, apply backward-compatible migrations once, deploy components and execute smoke tests. Provider project IDs and scoped secrets are required to complete that wiring. Staging automation is pending until configured and exercised; a manual first deployment alone does not finish the gate.
+The workflow now includes an opt-in staging release job after Foundation checks. It applies migrations once, deploys the tested commit to the existing services and checks stable HTTPS endpoints. Follow [CI-gated staging releases](staging-release.md) to configure IDs/secrets and activate it. Automation remains unverified until its first hosted run passes; a manual deployment alone does not finish the gate.

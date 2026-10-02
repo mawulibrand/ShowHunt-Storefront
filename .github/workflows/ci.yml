@@ -1,5 +1,10 @@
 name: Foundation checks
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore: ['staging-release/**']
+  pull_request:
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -40,3 +45,41 @@ jobs:
           done
           API_TEST_URL=http://localhost:4000 EXPECT_DB_READY=true pnpm --filter @showhunt/api test
       - run: pnpm audit --prod --audit-level high
+      - name: Staging release failure paths
+        run: node --test scripts/test/deploy-staging.test.mjs
+  deploy_staging:
+    name: Deploy verified commit to staging
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.STAGING_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: showhunt-staging-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Migrate, deploy and verify staging
+        run: node scripts/deploy-staging.mjs
+        env:
+          STAGING_DEPLOY_ENABLED: ${{ vars.STAGING_DEPLOY_ENABLED }}
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGING_DATABASE_DIRECT_URL: ${{ secrets.STAGING_DATABASE_DIRECT_URL }}
+          STAGING_VERCEL_TOKEN: ${{ secrets.STAGING_VERCEL_TOKEN }}
+          STAGING_DIGITALOCEAN_TOKEN: ${{ secrets.STAGING_DIGITALOCEAN_TOKEN }}
+          STAGING_VERCEL_PROTECTION_BYPASS: ${{ secrets.STAGING_VERCEL_PROTECTION_BYPASS }}
+          STAGING_VERCEL_TEAM_ID: ${{ vars.STAGING_VERCEL_TEAM_ID }}
+          STAGING_VERCEL_API_PROJECT_ID: ${{ vars.STAGING_VERCEL_API_PROJECT_ID }}
+          STAGING_VERCEL_STOREFRONT_PROJECT_ID: ${{ vars.STAGING_VERCEL_STOREFRONT_PROJECT_ID }}
+          STAGING_VERCEL_ADMIN_PROJECT_ID: ${{ vars.STAGING_VERCEL_ADMIN_PROJECT_ID }}
+          STAGING_DIGITALOCEAN_APP_ID: ${{ vars.STAGING_DIGITALOCEAN_APP_ID }}

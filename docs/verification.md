@@ -2,11 +2,12 @@
 
 ## Current staging evidence (2026-10-02)
 
-- The local repository is at `b13a48d467a54eee859bc3ff70710d4285b9c3ab` and matches its origin/main tracking reference. The owner reported green Foundation checks for this commit; GitHub's run was not independently inspected.
+- Before this automation change, the local repository and origin/main matched `d96f9d78dc8006e631bd10e660b86c750222fa0b` (Record staging verification and optimize worker build). The owner previously reported green Foundation checks for branding commit `b13a48d467a54eee859bc3ff70710d4285b9c3ab`; GitHub's run was not independently inspected.
 - Both Vercel frontend URLs returned HTTP 200 and referenced the new logo. Their logo SVG, favicon.ico and icon.svg matched the corresponding local file hashes. This confirms asset delivery, not the deployed SHA of every service.
 - Branding builds passed for storefront/admin. Browser checks of both local production builds at 1440, 375 and 320 pixels found no horizontal overflow, failed assets or runtime errors; logo keyboard focus was visible. These checks do not substitute for a Ghana mobile-network performance benchmark.
 - Hosted API checked again on October 2: /health/live and /health/ready returned 200 with status ok, X-Request-ID and Cache-Control: no-store. Production /api/v1/docs returned 404. The startup deadlock described in the earlier investigation is resolved on the deployed service.
 - Owner-supplied DigitalOcean runtime logs show worker_started at 2026-10-01 16:02:54 and worker_process_heartbeat every minute from 16:03:54 through 16:18:54. In the current worker, startup is logged only after PostgreSQL answers and the foundation migration is found. Heartbeats confirm process activity for that recorded window, not continuous database connectivity or job processing. No job handlers exist yet.
+- On October 2, the owner reported successful worker redeployment after the root `heroku-postbuild` change and blank custom build command. The provider commit and fresh runtime logs were not independently inspected.
 - The owner reported creation of showhunt-staging-media and showhunt-staging-evidence. A media-bucket screenshot showed Standard storage before public access was enabled. The media development base URL is https://pub-c9feaa9b1f8e4fa6be41c16972d91771.r2.dev.
 - Manual R2 upload/public-read check passed: the owner supplied the actual object URL, https://pub-c9feaa9b1f8e4fa6be41c16972d91771.r2.dev/showhunt-logo-light.svg. An independent GET at 13:39 UTC returned HTTP 200, Content-Type image/svg+xml and 6,193 bytes; the SHA-256 matched the local SVG. The earlier 404 came from checking an unuploaded PNG filename. No application upload or authenticated storage operation has been tested.
 - The owner confirmed that `showhunt-staging-evidence` has Public Development URL disabled and no connected Custom Domains. This records the dashboard configuration; private authorized reads will be tested when the files adapter is implemented.
@@ -14,7 +15,9 @@
 
 ## Remaining foundation acceptance
 
-- Coordinate staging deployments only after successful CI and prove the intended release SHA for API, worker and both frontends. The current workflow performs checks but does not deploy services.
+Local staging release preparation passed 29 simulated provider/failure-path tests and Node syntax checking. All three Vercel configurations parsed successfully. The tests cover migration gating, stale/ref/commit mismatches, domain ownership, preserved encrypted worker settings, reruns, timeouts and production HTTPS smoke behavior. They do not establish hosted provider integration; the workflow remains disabled until configured and exercised.
+
+- Configure and exercise the opt-in CI-gated staging release job, proving the intended SHA for API, worker and both frontends. No provider release has been triggered by the assistant. See [activation runbook](runbooks/staging-release.md).
 - Verify hosted worker shutdown/restart and unavailable-database behavior, and validate the portable Docker images separately.
 - Exercise a fresh-clone setup, hosted failure checks and Ghana mobile-network timings; validate restore capability before launch. The backend p95 latency target has not been measured.
 - R2 adapter, signed uploads, media validation and private evidence authorization remain future catalog/files work. Provider resource creation and manual public reads do not establish those application capabilities.
