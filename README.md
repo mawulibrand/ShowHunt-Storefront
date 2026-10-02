@@ -2,7 +2,7 @@
 
 Ghana-first, mobile-first commerce. This repository starts SPEC-001's foundation milestone with a branded pre-launch storefront, an inert staff shell, a NestJS API/worker and PostgreSQL migrations.
 
-Hosting plan: **Vercel** storefront/admin/API, **Neon** PostgreSQL, **Cloudflare R2** files, and **DigitalOcean** worker. See [ADR-002](docs/architecture/ADR-002-hosting.md) and the [staging runbook](docs/runbooks/staging.md). Provider configuration is prepared; hosted deployment is not yet verified.
+Hosting plan: **Vercel** storefront/admin/API, **Neon** PostgreSQL, **Cloudflare R2** files, and **DigitalOcean** worker. See [ADR-002](docs/architecture/ADR-002-hosting.md) and the [staging runbook](docs/runbooks/staging.md). The staging API and frontends have passed hosted checks. The owner supplied successful worker startup logs and created R2 staging buckets. See [verification status](docs/verification.md) for evidence and remaining release gates.
 
 ## Prerequisites
 
@@ -45,6 +45,6 @@ After building, run `node apps/api/scripts/smoke.mjs` to launch an isolated API 
 
 ## Delivery status
 
-I-02 is in progress. No customer authentication, real catalog, payment, inventory or staff controls exist yet. The public page accurately states that orders are unavailable. Staging is not provisioned. See [foundation decisions](docs/architecture/foundation.md) and [development runbook](docs/runbooks/development.md).
+I-02 infrastructure is provisioned and its manual staging checks are recorded. No customer authentication, real catalog, payment, inventory or staff controls exist yet. The public page accurately states that orders are unavailable. Coordinated deployment after successful CI, release-SHA verification and the remaining recovery/failure-path checks are still pending. See [foundation decisions](docs/architecture/foundation.md) and [development runbook](docs/runbooks/development.md).
 
 Dependencies are installed with pnpm 10.17.1 and `pnpm-lock.yaml` is included. Builds, TypeScript checks and the isolated API smoke test pass locally. Check [verification status](docs/verification.md) for remaining infrastructure checks.

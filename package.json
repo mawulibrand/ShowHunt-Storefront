@@ -9,6 +9,7 @@
     "scripts":  {
                     "dev":  "turbo run dev",
                     "build":  "turbo run build",
+                    "heroku-postbuild":  "pnpm --filter @showhunt/api build",
                     "typecheck":  "turbo run typecheck",
                     "test":  "turbo run test",
                     "db:migrate":  "pnpm --filter @showhunt/api db:migrate"

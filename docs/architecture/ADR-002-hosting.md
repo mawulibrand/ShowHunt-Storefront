@@ -1,6 +1,6 @@
 # ADR-002: Vercel, Neon, R2 and DigitalOcean worker
 
-Status: accepted by the project owner on 2026-10-01; deployment pending.
+Status: accepted by the project owner on 2026-10-01; initial staging services provisioned. Full foundation acceptance remains pending; see [verification evidence](../verification.md).
 
 This decision supersedes only the hosting target in SPEC-001. Keep the original spec as historical input. Feature scope, modular monolith, pnpm, Next.js, NestJS, PostgreSQL search/jobs, phone OTP, staff MFA, commerce invariants and release gates remain in force.
 
@@ -14,7 +14,7 @@ This decision supersedes only the hosting target in SPEC-001. Keep the original 
 | Database | Neon PostgreSQL 17, separate staging and production data/credentials |
 | Public product/review images | Cloudflare R2, explicit public delivery configuration |
 | Private evidence | Separate private R2 bucket; authorized, expiring signed URLs |
-| Worker | DigitalOcean App Platform worker using infrastructure/worker.Dockerfile |
+| Worker | DigitalOcean App Platform worker; initial dashboard setup uses the Node.js buildpack and the root `heroku-postbuild` hook. infrastructure/worker.Dockerfile remains the portable deployment alternative. |
 
 Proposed initial placement is Vercel fra1, Neon AWS eu-central-1 and DigitalOcean fra. This is a starting assumption to test from Ghana, not a measured latency claim. Adjust locations before provisioning if capacity, latency or cost warrants it.
 

@@ -1,5 +1,26 @@
 # Foundation verification
 
+## Current staging evidence (2026-10-02)
+
+- The local repository is at `b13a48d467a54eee859bc3ff70710d4285b9c3ab` and matches its origin/main tracking reference. The owner reported green Foundation checks for this commit; GitHub's run was not independently inspected.
+- Both Vercel frontend URLs returned HTTP 200 and referenced the new logo. Their logo SVG, favicon.ico and icon.svg matched the corresponding local file hashes. This confirms asset delivery, not the deployed SHA of every service.
+- Branding builds passed for storefront/admin. Browser checks of both local production builds at 1440, 375 and 320 pixels found no horizontal overflow, failed assets or runtime errors; logo keyboard focus was visible. These checks do not substitute for a Ghana mobile-network performance benchmark.
+- Hosted API checked again on October 2: /health/live and /health/ready returned 200 with status ok, X-Request-ID and Cache-Control: no-store. Production /api/v1/docs returned 404. The startup deadlock described in the earlier investigation is resolved on the deployed service.
+- Owner-supplied DigitalOcean runtime logs show worker_started at 2026-10-01 16:02:54 and worker_process_heartbeat every minute from 16:03:54 through 16:18:54. In the current worker, startup is logged only after PostgreSQL answers and the foundation migration is found. Heartbeats confirm process activity for that recorded window, not continuous database connectivity or job processing. No job handlers exist yet.
+- The owner reported creation of showhunt-staging-media and showhunt-staging-evidence. A media-bucket screenshot showed Standard storage before public access was enabled. The media development base URL is https://pub-c9feaa9b1f8e4fa6be41c16972d91771.r2.dev.
+- Manual R2 upload/public-read check passed: the owner supplied the actual object URL, https://pub-c9feaa9b1f8e4fa6be41c16972d91771.r2.dev/showhunt-logo-light.svg. An independent GET at 13:39 UTC returned HTTP 200, Content-Type image/svg+xml and 6,193 bytes; the SHA-256 matched the local SVG. The earlier 404 came from checking an unuploaded PNG filename. No application upload or authenticated storage operation has been tested.
+- The owner confirmed that `showhunt-staging-evidence` has Public Development URL disabled and no connected Custom Domains. This records the dashboard configuration; private authorized reads will be tested when the files adapter is implemented.
+- pnpm 10.17.1 is installed in the Windows user account; pnpm.cmd works and the owner confirmed local development starts.
+
+## Remaining foundation acceptance
+
+- Coordinate staging deployments only after successful CI and prove the intended release SHA for API, worker and both frontends. The current workflow performs checks but does not deploy services.
+- Verify hosted worker shutdown/restart and unavailable-database behavior, and validate the portable Docker images separately.
+- Exercise a fresh-clone setup, hosted failure checks and Ghana mobile-network timings; validate restore capability before launch. The backend p95 latency target has not been measured.
+- R2 adapter, signed uploads, media validation and private evidence authorization remain future catalog/files work. Provider resource creation and manual public reads do not establish those application capabilities.
+
+The sections below record earlier checks and their limitations at the time they were performed.
+
 ## Passed locally
 
 - Node.js 24.16.0 is available.
@@ -9,10 +30,6 @@
 - API smoke test passed: liveness, request ID propagation, development OpenAPI and 503 readiness without PostgreSQL. Cold startup required increasing the harness wait from 10 to 60 seconds.
 - `pnpm audit --prod --audit-level high` passed with no known vulnerabilities reported.
 - Migration runner, smoke runner and environment module pass Node syntax checks.
-
-## Pending
-
-- Container build, successful hosted staging verification and manual browser/device review remain pending.
 
 ## Hosting-plan validation (2026-10-01)
 
